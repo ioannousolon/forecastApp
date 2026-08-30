@@ -1,0 +1,269 @@
+:root {
+  --chart-speed: #2563eb;
+  --chart-gust: #93c5fd;
+  --chart-alt: #a855f7;
+  --good: #16a34a;
+  --good-bg: rgba(22, 163, 74, 0.12);
+  --fair: #b45309;
+  --fair-bg: rgba(180, 83, 9, 0.14);
+  --poor: #dc2626;
+  --poor-bg: rgba(220, 38, 38, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --chart-speed: #60a5fa;
+    --chart-gust: #3b5878;
+    --chart-alt: #d8b4fe;
+    --good: #4ade80;
+    --good-bg: rgba(74, 222, 128, 0.15);
+    --fair: #fbbf24;
+    --fair-bg: rgba(251, 191, 36, 0.15);
+    --poor: #f87171;
+    --poor-bg: rgba(248, 113, 113, 0.15);
+  }
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  text-align: left;
+}
+
+.app-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-header .subtitle {
+  color: var(--text);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.spot-list {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.spot-item {
+  text-align: left;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--text);
+}
+
+.spot-item:hover {
+  background: var(--code-bg);
+}
+
+.spot-item.active {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
+.spot-name {
+  font-weight: 600;
+  color: var(--text-h);
+  font-size: 15px;
+}
+
+.spot-country {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.content {
+  flex: 1;
+  padding: 20px 28px;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.spot-header .blurb {
+  font-size: 14px;
+  color: var(--text);
+  max-width: 640px;
+}
+
+.status {
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.status.error {
+  color: var(--poor);
+}
+
+.best-window {
+  margin: 16px 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--good-bg);
+  color: var(--good);
+  font-size: 14px;
+  width: fit-content;
+}
+
+.best-window.fair {
+  background: var(--fair-bg);
+  color: var(--fair);
+}
+
+.wind-chart {
+  width: 100%;
+  height: auto;
+  margin-top: 8px;
+}
+
+.chart-gridline {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.chart-axis-label {
+  font-size: 10px;
+  fill: var(--text);
+  opacity: 0.7;
+}
+
+.legend {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text);
+  margin: 8px 0 20px;
+}
+
+.legend .dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.legend .dot.dash {
+  background: var(--chart-gust);
+}
+
+.tide-note {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 16px;
+}
+
+.day-block {
+  margin-bottom: 24px;
+}
+
+.day-block h3 {
+  font-size: 14px;
+  color: var(--text-h);
+  margin: 0 0 8px;
+}
+
+.forecast-table-wrap {
+  overflow-x: auto;
+}
+
+.forecast-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+
+.forecast-table th {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.forecast-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  text-transform: capitalize;
+  margin-right: 4px;
+}
+
+.badge-good {
+  background: var(--good-bg);
+  color: var(--good);
+}
+
+.badge-fair {
+  background: var(--fair-bg);
+  color: var(--fair);
+}
+
+.badge-poor {
+  background: var(--poor-bg);
+  color: var(--poor);
+}
+
+.dir-arrow {
+  display: inline-block;
+  margin-right: 2px;
+}
+
+.diff-tag {
+  font-size: 11px;
+  opacity: 0.65;
+}
+
+td.diff-mid .diff-tag {
+  color: var(--fair);
+  opacity: 1;
+}
+
+td.diff-high .diff-tag {
+  color: var(--poor);
+  opacity: 1;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .layout {
+    flex-direction: column;
+  }
+  .spot-list {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .content {
+    padding: 16px;
+  }
+}
