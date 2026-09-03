@@ -11,22 +11,6 @@
   --poor-bg: rgba(248, 113, 113, 0.15);
 }
 
-/* Dark is the default look; only switch to light when the OS explicitly prefers it. */
-@media (prefers-color-scheme: light) {
-  :root {
-    --chart-speed: #2563eb;
-    --chart-gust: #93c5fd;
-    --chart-observed: #c2410c;
-    --chart-observed-gust: #fdba74;
-    --good: #16a34a;
-    --good-bg: rgba(22, 163, 74, 0.12);
-    --fair: #b45309;
-    --fair-bg: rgba(180, 83, 9, 0.14);
-    --poor: #dc2626;
-    --poor-bg: rgba(220, 38, 38, 0.12);
-  }
-}
-
 .app {
   display: flex;
   flex-direction: column;
