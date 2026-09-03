@@ -26,15 +26,20 @@ function combine(a: Rating, b: Rating): Rating {
   return RATING_RANK[a] <= RATING_RANK[b] ? a : b;
 }
 
+export interface WindRating {
+  rating: Rating;
+  speedRating: Rating;
+  directionRating: Rating;
+}
+
+export function rateWind(windSpeedKt: number, windDirDeg: number, spot: Spot): WindRating {
+  const speedRating = rateSpeed(windSpeedKt);
+  const directionRating = rateDirection(windDirDeg, spot.onshoreWindDir);
+  return { speedRating, directionRating, rating: combine(speedRating, directionRating) };
+}
+
 export function ratePoint(point: HourlyPoint, spot: Spot): RatedPoint {
-  const speedRating = rateSpeed(point.windSpeedKt);
-  const directionRating = rateDirection(point.windDirDeg, spot.onshoreWindDir);
-  return {
-    ...point,
-    speedRating,
-    directionRating,
-    rating: combine(speedRating, directionRating),
-  };
+  return { ...point, ...rateWind(point.windSpeedKt, point.windDirDeg, spot) };
 }
 
 export function rateForecast(points: HourlyPoint[], spot: Spot): RatedPoint[] {

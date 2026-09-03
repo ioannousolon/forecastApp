@@ -1,0 +1,36 @@
+name: Update tide data
+
+on:
+  schedule:
+    # Weekly. See the credit math in the plan: 18 tidal spots x 1 credit (7-day window) = 18
+    # credits/run, ~4.3 runs/month ≈ 77/month against a 100/month WorldTides budget.
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  update-tides:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Fetch tide predictions
+        env:
+          WORLDTIDES_API_KEY: ${{ secrets.WORLDTIDES_API_KEY }}
+        run: npx tsx scripts/fetch-tides.ts
+
+      - name: Commit updated tides.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/tides.json
+          git diff --staged --quiet || git commit -m "Update tide data"
+          git push
