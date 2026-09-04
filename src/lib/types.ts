@@ -23,6 +23,8 @@ export interface Spot {
   country: string;
   /** Sidebar grouping — usually the country, but the original curated spots stay grouped as "Worldwide". */
   region: string;
+  /** Applicable sports for this spot — default to both if omitted */
+  sports?: AppMode[];
   lat: number;
   lon: number;
   /** Meteorological direction (deg, "from") of wind blowing straight onshore at this spot. */
@@ -44,6 +46,13 @@ export interface LiveReading {
   windSpeedKt: number;
   windGustKt: number;
   windDirDeg: number;
+  waveHeightM?: number | null;
+  wavePeriodS?: number | null;
+  waveDirDeg?: number | null;
+  surfHeightMMin?: number;
+  surfHeightMMax?: number;
+  surfRating?: SurfRating;
+  windClass?: WindClass;
 }
 
 export interface StationReading {

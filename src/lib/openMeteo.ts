@@ -161,17 +161,28 @@ interface CurrentBlock {
 
 /** Latest model-analyzed "right now" reading (refreshes roughly every 15 minutes upstream). */
 export async function fetchCurrentConditions(spot: Spot): Promise<LiveReading | null> {
-  const url =
+  const windUrl =
     `https://api.open-meteo.com/v1/forecast?latitude=${spot.lat}&longitude=${spot.lon}` +
     `&current=wind_speed_10m,wind_gusts_10m,wind_direction_10m&windspeed_unit=kn&timezone=auto`;
 
+  const marineUrl =
+    `https://marine-api.open-meteo.com/v1/marine?latitude=${spot.lat}&longitude=${spot.lon}` +
+    `&current=wave_height,wave_period,wave_direction&timezone=auto`;
+
   try {
-    const data = await fetchJson<{ current: CurrentBlock }>(url);
+    const [windData, marineData] = await Promise.all([
+      fetchJson<{ current: CurrentBlock }>(windUrl),
+      fetchJson<{ current?: { wave_height: number; wave_period: number; wave_direction: number } }>(marineUrl).catch(() => null),
+    ]);
+
     return {
-      time: data.current.time,
-      windSpeedKt: data.current.wind_speed_10m,
-      windGustKt: data.current.wind_gusts_10m,
-      windDirDeg: data.current.wind_direction_10m,
+      time: windData.current.time,
+      windSpeedKt: windData.current.wind_speed_10m,
+      windGustKt: windData.current.wind_gusts_10m,
+      windDirDeg: windData.current.wind_direction_10m,
+      waveHeightM: marineData?.current?.wave_height ?? null,
+      wavePeriodS: marineData?.current?.wave_period ?? null,
+      waveDirDeg: marineData?.current?.wave_direction ?? null,
     };
   } catch {
     return null;

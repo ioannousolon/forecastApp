@@ -1,5 +1,6 @@
 import type { AppMode, LiveReading, Spot, StationReading } from "../lib/types";
-import { rateWind, compassLabel, classifyWind } from "../lib/suitability";
+import { rateWind, compassLabel, classifyWind, evaluateLiveSurfReading } from "../lib/suitability";
+import { SURF_RATING_LABEL } from "./SurfChart";
 
 interface Props {
   spot: Spot;
@@ -26,33 +27,51 @@ export function LiveNow({ spot, current, station, appMode = "kite" }: Props) {
       {current && (
         <div className="live-card">
           <div className="live-card-head">
-            <span className="live-dot" /> Live model estimate
+            <span className="live-dot" /> {isSurf ? "Live Surf Conditions" : "Live model estimate"}
           </div>
           {(() => {
-            const r = rateWind(current.windSpeedKt, current.windDirDeg, spot);
-            const windClass = classifyWind(current.windDirDeg, current.windSpeedKt, spot);
+            if (isSurf) {
+              const surfEval = evaluateLiveSurfReading(current, spot);
+              return (
+                <div className="live-card-body live-card-body-surf">
+                  <div className="live-surf-top">
+                    <span className={`badge badge-surf badge-surf-${surfEval.surfRating}`}>
+                      {SURF_RATING_LABEL[surfEval.surfRating]}
+                    </span>
+                    <span className={`wind-badge wind-${surfEval.windClass}`}>
+                      {surfEval.windClass.replace("_", " ")}
+                    </span>
+                  </div>
+                  <strong className="live-surf-height">
+                    {surfEval.surfHeightMMin.toFixed(1)}–{surfEval.surfHeightMMax.toFixed(1)} m face
+                  </strong>
+                  {current.waveHeightM != null && (
+                    <span className="live-sub">
+                      🌊 Open-water wave: {current.waveHeightM.toFixed(1)}m
+                      {current.wavePeriodS != null ? ` @ ${current.wavePeriodS}s` : ""}
+                      {current.waveDirDeg != null ? ` ${compassLabel(current.waveDirDeg)}` : ""}
+                    </span>
+                  )}
+                  <span className="live-sub">
+                    💨 Wind: {Math.round(current.windSpeedKt)} kt {compassLabel(current.windDirDeg)} ({Math.round(current.windDirDeg)}°)
+                  </span>
+                  <div className="live-surf-meta">
+                    {spot.breakType && <span className="live-sub spot-break-tag">📍 {spot.breakType}</span>}
+                    {spot.optimalTide && <span className="live-sub spot-tide-tag">🌊 Best tide: {spot.optimalTide}</span>}
+                  </div>
+                </div>
+              );
+            }
 
+            const r = rateWind(current.windSpeedKt, current.windDirDeg, spot);
             return (
               <div className="live-card-body">
-                {isSurf ? (
-                  <>
-                    <span className={`wind-badge wind-${windClass}`}>{windClass.replace("_", " ")}</span>
-                    <strong>{Math.round(current.windSpeedKt)} kt</strong>
-                    <span className="live-sub">
-                      {compassLabel(current.windDirDeg)} ({Math.round(current.windDirDeg)}°)
-                    </span>
-                    {spot.breakType && <span className="live-sub spot-break-tag">{spot.breakType}</span>}
-                  </>
-                ) : (
-                  <>
-                    <span className={`badge badge-${r.rating}`}>{r.rating}</span>
-                    <strong>{Math.round(current.windSpeedKt)} kt</strong>
-                    <span className="live-sub">gusting {Math.round(current.windGustKt)} kt</span>
-                    <span className="live-sub">
-                      {compassLabel(current.windDirDeg)} ({Math.round(current.windDirDeg)}°)
-                    </span>
-                  </>
-                )}
+                <span className={`badge badge-${r.rating}`}>{r.rating}</span>
+                <strong>{Math.round(current.windSpeedKt)} kt</strong>
+                <span className="live-sub">gusting {Math.round(current.windGustKt)} kt</span>
+                <span className="live-sub">
+                  {compassLabel(current.windDirDeg)} ({Math.round(current.windDirDeg)}°)
+                </span>
               </div>
             );
           })()}
@@ -66,9 +85,25 @@ export function LiveNow({ spot, current, station, appMode = "kite" }: Props) {
             <span className="live-dot station" /> {station.stationName} · {station.distanceKm.toFixed(0)} km away
           </div>
           <div className="live-card-body">
-            <strong>{station.windSpeedKt} kt</strong>
-            {station.windGustKt != null && <span className="live-sub">gusting {station.windGustKt} kt</span>}
-            <span className="live-sub">{station.windDirDeg != null ? `${compassLabel(station.windDirDeg)} (${station.windDirDeg}°)` : "variable"}</span>
+            {isSurf ? (
+              <>
+                {station.windDirDeg != null && (
+                  <span className={`wind-badge wind-${classifyWind(station.windDirDeg, station.windSpeedKt, spot)}`}>
+                    {classifyWind(station.windDirDeg, station.windSpeedKt, spot).replace("_", " ")}
+                  </span>
+                )}
+                <strong>{station.windSpeedKt} kt wind</strong>
+                <span className="live-sub">
+                  {station.windDirDeg != null ? `${compassLabel(station.windDirDeg)} (${station.windDirDeg}°)` : "variable"}
+                </span>
+              </>
+            ) : (
+              <>
+                <strong>{station.windSpeedKt} kt</strong>
+                {station.windGustKt != null && <span className="live-sub">gusting {station.windGustKt} kt</span>}
+                <span className="live-sub">{station.windDirDeg != null ? `${compassLabel(station.windDirDeg)} (${station.windDirDeg}°)` : "variable"}</span>
+              </>
+            )}
           </div>
           <div className="live-card-foot" title={station.raw}>
             observed {timeAgo(station.observedAt)} · real station reading, not a forecast
@@ -86,4 +121,3 @@ export function LiveNow({ spot, current, station, appMode = "kite" }: Props) {
     </div>
   );
 }
-

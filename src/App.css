@@ -273,6 +273,40 @@
   font-size: 14px;
 }
 
+.live-card-body-surf {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.live-surf-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.live-surf-height {
+  font-size: 22px !important;
+  line-height: 1.2;
+}
+
+.live-surf-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.spot-tide-tag {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
 .live-card-body strong {
   font-size: 20px;
   color: var(--text-h);

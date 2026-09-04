@@ -1,4 +1,4 @@
-import type { HourlyPoint, RatedPoint, Rating, Spot } from "./types";
+import type { HourlyPoint, LiveReading, RatedPoint, Rating, Spot } from "./types";
 
 export function angleDiff(a: number, b: number): number {
   const d = Math.abs(a - b) % 360;
@@ -95,6 +95,28 @@ export function rateSurfPoint(
   }
 
   return { surfRating, windClass, surfHeightMMin: minM, surfHeightMMax: maxM };
+}
+
+export function evaluateLiveSurfReading(
+  reading: LiveReading,
+  spot: Spot
+): {
+  surfRating: import("./types").SurfRating;
+  windClass: import("./types").WindClass;
+  surfHeightMMin: number;
+  surfHeightMMax: number;
+} {
+  const dummyPoint: HourlyPoint = {
+    time: reading.time,
+    windSpeedKt: reading.windSpeedKt,
+    windGustKt: reading.windGustKt,
+    windDirDeg: reading.windDirDeg,
+    waveHeightM: reading.waveHeightM ?? null,
+    wavePeriodS: reading.wavePeriodS ?? null,
+    waveDirDeg: reading.waveDirDeg ?? null,
+    tideHeightM: null,
+  };
+  return rateSurfPoint(dummyPoint, spot);
 }
 
 export function ratePoint(point: HourlyPoint, spot: Spot): RatedPoint {

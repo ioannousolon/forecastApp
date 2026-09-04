@@ -1,4 +1,4 @@
-import type { Spot } from "./types";
+import type { AppMode, Spot } from "./types";
 
 export const SPOTS: Spot[] = [
   {
@@ -6,6 +6,7 @@ export const SPOTS: Spot[] = [
     name: "Tarifa",
     country: "Spain",
     region: "Worldwide",
+    sports: ["kite", "surf"],
     lat: 36.0128,
     lon: -5.6012,
     onshoreWindDir: 180,
@@ -20,6 +21,7 @@ export const SPOTS: Spot[] = [
     name: "Bloubergstrand",
     country: "South Africa",
     region: "Worldwide",
+    sports: ["kite", "surf"],
     lat: -33.8567,
     lon: 18.4775,
     onshoreWindDir: 280,
@@ -34,6 +36,7 @@ export const SPOTS: Spot[] = [
     name: "Kanaha Beach",
     country: "USA (Maui)",
     region: "Worldwide",
+    sports: ["kite", "surf"],
     lat: 20.905,
     lon: -156.43,
     onshoreWindDir: 0,
@@ -48,6 +51,7 @@ export const SPOTS: Spot[] = [
     name: "Cabarete",
     country: "Dominican Republic",
     region: "Worldwide",
+    sports: ["kite", "surf"],
     lat: 19.758,
     lon: -70.409,
     onshoreWindDir: 0,
@@ -62,6 +66,7 @@ export const SPOTS: Spot[] = [
     name: "Jericoacoara",
     country: "Brazil",
     region: "Worldwide",
+    sports: ["kite"],
     lat: -2.7975,
     lon: -40.5137,
     onshoreWindDir: 0,
@@ -75,6 +80,7 @@ export const SPOTS: Spot[] = [
     name: "Dakhla Lagoon",
     country: "Morocco",
     region: "Worldwide",
+    sports: ["kite"],
     lat: 23.68,
     lon: -15.95,
     onshoreWindDir: 315,
@@ -89,6 +95,7 @@ export const SPOTS: Spot[] = [
     name: "Hood River",
     country: "USA (Oregon)",
     region: "Worldwide",
+    sports: ["kite"],
     lat: 45.7,
     lon: -121.52,
     onshoreWindDir: 90,
@@ -103,6 +110,7 @@ export const SPOTS: Spot[] = [
     name: "Essaouira",
     country: "Morocco",
     region: "Worldwide",
+    sports: ["kite", "surf"],
     lat: 31.512,
     lon: -9.77,
     onshoreWindDir: 270,
@@ -112,12 +120,13 @@ export const SPOTS: Spot[] = [
     surfBlurb: "Wide sandy beach break and bay reefs catching Atlantic groundswells.",
     metarStation: { icao: "GMMI", name: "Essaouira/Mogador Airport", lat: 31.406, lon: -9.687 },
   },
-  // --- Cyprus Spots (Kite & Surf) ---
+  // --- Cyprus Spots ---
   {
     id: "paphos-venus",
     name: "Venus Beach (Paphos)",
     country: "Cyprus",
     region: "Cyprus",
+    sports: ["surf"],
     lat: 34.7801,
     lon: 32.4045,
     onshoreWindDir: 270,
@@ -135,6 +144,7 @@ export const SPOTS: Spot[] = [
     name: "Helios / Coral Bay",
     country: "Cyprus",
     region: "Cyprus",
+    sports: ["surf"],
     lat: 34.8542,
     lon: 32.3688,
     onshoreWindDir: 240,
@@ -152,6 +162,7 @@ export const SPOTS: Spot[] = [
     name: "Curium Beach (Kourion)",
     country: "Cyprus",
     region: "Cyprus",
+    sports: ["kite", "surf"],
     lat: 34.6644,
     lon: 32.8872,
     onshoreWindDir: 180,
@@ -169,6 +180,7 @@ export const SPOTS: Spot[] = [
     name: "Alaminos Reef",
     country: "Cyprus",
     region: "Cyprus",
+    sports: ["surf"],
     lat: 34.7335,
     lon: 33.4312,
     onshoreWindDir: 150,
@@ -186,6 +198,7 @@ export const SPOTS: Spot[] = [
     name: "Cape Greco / Konnos",
     country: "Cyprus",
     region: "Cyprus",
+    sports: ["surf"],
     lat: 34.9841,
     lon: 34.0711,
     onshoreWindDir: 110,
@@ -203,6 +216,7 @@ export const SPOTS: Spot[] = [
     name: "Pervolia",
     country: "Cyprus",
     region: "Cyprus",
+    sports: ["kite"],
     lat: 34.865,
     lon: 33.635,
     onshoreWindDir: 170,
@@ -217,6 +231,7 @@ export const SPOTS: Spot[] = [
     name: "Akrotiri",
     country: "Cyprus",
     region: "Cyprus",
+    sports: ["kite"],
     lat: 34.593,
     lon: 32.939,
     onshoreWindDir: 170,
@@ -231,6 +246,7 @@ export const SPOTS: Spot[] = [
     name: "Ladies Mile",
     country: "Cyprus",
     region: "Cyprus",
+    sports: ["kite"],
     lat: 34.648,
     lon: 33.009,
     onshoreWindDir: 120,
@@ -245,6 +261,7 @@ export const SPOTS: Spot[] = [
     name: "Paramali",
     country: "Cyprus",
     region: "Cyprus",
+    sports: ["kite", "surf"],
     lat: 34.667,
     lon: 32.807,
     onshoreWindDir: 170,
@@ -259,6 +276,7 @@ export const SPOTS: Spot[] = [
     name: "Karavostasi (Yeşilyurt)",
     country: "Cyprus (north coast)",
     region: "Cyprus",
+    sports: ["kite", "surf"],
     lat: 35.148,
     lon: 32.823,
     onshoreWindDir: 330,
@@ -272,6 +290,7 @@ export const SPOTS: Spot[] = [
     name: "Prasonisi",
     country: "Greece (Rhodes)",
     region: "Greece",
+    sports: ["kite", "surf"],
     lat: 35.8825,
     lon: 27.7592,
     onshoreWindDir: 270,
@@ -284,6 +303,7 @@ export const SPOTS: Spot[] = [
     name: "Ftelia Beach",
     country: "Greece (Mykonos)",
     region: "Greece",
+    sports: ["kite"],
     lat: 37.478,
     lon: 25.36,
     onshoreWindDir: 0,
@@ -297,6 +317,7 @@ export const SPOTS: Spot[] = [
     name: "Golden Beach",
     country: "Greece (Paros)",
     region: "Greece",
+    sports: ["kite"],
     lat: 37.033,
     lon: 25.183,
     onshoreWindDir: 90,
@@ -310,6 +331,7 @@ export const SPOTS: Spot[] = [
     name: "Brouwersdam",
     country: "Netherlands",
     region: "Netherlands",
+    sports: ["kite"],
     lat: 51.751,
     lon: 3.838,
     onshoreWindDir: 280,
@@ -322,6 +344,7 @@ export const SPOTS: Spot[] = [
     name: "IJmuiden",
     country: "Netherlands",
     region: "Netherlands",
+    sports: ["kite", "surf"],
     lat: 52.468,
     lon: 4.552,
     onshoreWindDir: 270,
@@ -335,6 +358,7 @@ export const SPOTS: Spot[] = [
     name: "Scheveningen",
     country: "Netherlands",
     region: "Netherlands",
+    sports: ["kite", "surf"],
     lat: 52.108,
     lon: 4.278,
     onshoreWindDir: 290,
@@ -347,10 +371,15 @@ export const SPOTS: Spot[] = [
 
 const REGION_ORDER = ["Worldwide", "Cyprus", "Greece", "Netherlands"];
 
-/** Spots grouped by sidebar region, with `REGION_ORDER` pinned first and any other region alphabetical after. */
-export const SPOT_GROUPS: [string, Spot[]][] = (() => {
+export function getSpotsForMode(mode: AppMode): Spot[] {
+  return SPOTS.filter((s) => !s.sports || s.sports.includes(mode));
+}
+
+/** Spots grouped by sidebar region for a given sport mode, with `REGION_ORDER` pinned first. */
+export function getSpotGroupsForMode(mode: AppMode): [string, Spot[]][] {
+  const modeSpots = getSpotsForMode(mode);
   const groups = new Map<string, Spot[]>();
-  for (const spot of SPOTS) {
+  for (const spot of modeSpots) {
     if (!groups.has(spot.region)) groups.set(spot.region, []);
     groups.get(spot.region)!.push(spot);
   }
@@ -362,5 +391,7 @@ export const SPOT_GROUPS: [string, Spot[]][] = (() => {
     if (ib === -1) return -1;
     return ia - ib;
   });
-})();
+}
 
+/** Backward compatible default grouping */
+export const SPOT_GROUPS: [string, Spot[]][] = getSpotGroupsForMode("kite");

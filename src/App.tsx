@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { SPOTS, SPOT_GROUPS } from "./lib/spots";
+import { SPOTS, getSpotsForMode, getSpotGroupsForMode } from "./lib/spots";
 import { fetchHourlyForecast, fetchCurrentConditions, fetchRecentWind, FORECAST_MODELS, type ModelId } from "./lib/openMeteo";
 import { fetchStationReading } from "./lib/metar";
 import { attachTides } from "./lib/tide";
@@ -23,8 +23,12 @@ const FORECAST_DAY_OPTIONS = [5, 10, 16] as const;
 type Tab = "report" | "forecast";
 
 export default function App() {
-  const [spotId, setSpotId] = useState(SPOTS[0].id);
   const [appMode, setAppMode] = useState<AppMode>("kite");
+
+  const spotGroups = useMemo(() => getSpotGroupsForMode(appMode), [appMode]);
+  const validSpots = useMemo(() => getSpotsForMode(appMode), [appMode]);
+
+  const [spotId, setSpotId] = useState(validSpots[0].id);
   const [tab, setTab] = useState<Tab>("report");
   const [selectedModel, setSelectedModel] = useState<ModelId>(FORECAST_MODELS[0].id);
   const [forecastDays, setForecastDays] = useState<number>(FORECAST_DAY_OPTIONS[0]);
@@ -38,7 +42,15 @@ export default function App() {
   const [recentTimezone, setRecentTimezone] = useState<string | null>(null);
   const [observedHistory, setObservedHistory] = useState<ObservedReading[]>([]);
 
-  const spot = useMemo(() => SPOTS.find((s) => s.id === spotId)!, [spotId]);
+  const spot = useMemo(() => SPOTS.find((s) => s.id === spotId) ?? validSpots[0], [spotId, validSpots]);
+
+  const handleModeChange = (newMode: AppMode) => {
+    setAppMode(newMode);
+    const available = getSpotsForMode(newMode);
+    if (!available.some((s) => s.id === spotId)) {
+      setSpotId(available[0].id);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -204,13 +216,13 @@ export default function App() {
           <div className="mode-toggle" role="group" aria-label="Select forecast mode">
             <button
               className={`mode-btn ${appMode === "kite" ? "active" : ""}`}
-              onClick={() => setAppMode("kite")}
+              onClick={() => handleModeChange("kite")}
             >
               🪁 Kitesurf
             </button>
             <button
               className={`mode-btn ${appMode === "surf" ? "active" : ""}`}
-              onClick={() => setAppMode("surf")}
+              onClick={() => handleModeChange("surf")}
             >
               🏄 Surf
             </button>
@@ -225,8 +237,8 @@ export default function App() {
 
       <div className="layout">
         <nav className="spot-list">
-          <h3 className="spot-list-title">Choose a spot:</h3>
-          {SPOT_GROUPS.map(([region, spots]) => (
+          <h3 className="spot-list-title">Choose a spot ({isSurf ? "Surf" : "Kite"}):</h3>
+          {spotGroups.map(([region, spots]) => (
             <details key={region} className="spot-group" open={region === "Cyprus" || region === "Worldwide"}>
               <summary className="spot-group-label">{region}</summary>
               {spots.map((s) => (
