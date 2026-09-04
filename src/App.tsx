@@ -7,8 +7,9 @@ import { rateForecast, rateWind } from "./lib/suitability";
 import { zoneCurrentHourKey, zoneNowKey } from "./lib/time";
 import { isWithinMiddayToSunset } from "./lib/sun";
 import { recordStationReading, getStationHistory, pruneStationHistory, type ObservedReading } from "./lib/duck";
-import type { LiveReading, RatedPoint, StationReading } from "./lib/types";
+import type { AppMode, LiveReading, RatedPoint, StationReading } from "./lib/types";
 import { WindChart, LegendSwatch, LINE_STYLES } from "./components/WindChart";
+import { SurfChart, SURF_RATING_LABEL } from "./components/SurfChart";
 import { ForecastTable } from "./components/ForecastTable";
 import { LiveNow } from "./components/LiveNow";
 import "./App.css";
@@ -23,6 +24,7 @@ type Tab = "report" | "forecast";
 
 export default function App() {
   const [spotId, setSpotId] = useState(SPOTS[0].id);
+  const [appMode, setAppMode] = useState<AppMode>("kite");
   const [tab, setTab] = useState<Tab>("report");
   const [selectedModel, setSelectedModel] = useState<ModelId>(FORECAST_MODELS[0].id);
   const [forecastDays, setForecastDays] = useState<number>(FORECAST_DAY_OPTIONS[0]);
@@ -184,22 +186,48 @@ export default function App() {
     if (!points || !forecastTimezone) return null;
     const currentHourKey = zoneCurrentHourKey(forecastTimezone);
     const upcoming = points.filter((p) => p.time >= currentHourKey);
-    const good = upcoming.filter((p) => p.rating === "good");
-    return good.length > 0 ? good[0] : null;
-  }, [points, forecastTimezone]);
+    if (appMode === "surf") {
+      const goodSurf = upcoming.filter((p) => p.surfRating === "epic" || p.surfRating === "good" || p.surfRating === "fair_to_good");
+      return goodSurf.length > 0 ? goodSurf[0] : null;
+    }
+    const goodKite = upcoming.filter((p) => p.rating === "good");
+    return goodKite.length > 0 ? goodKite[0] : null;
+  }, [points, forecastTimezone, appMode]);
+
+  const isSurf = appMode === "surf";
 
   return (
-    <div className="app">
+    <div className={`app mode-${appMode}`}>
       <header className="app-header">
-        <h1>🪁 Kitesurf Forecast</h1>
-        <p className="subtitle">Wind, wave and suitability outlook for top kitesurfing spots</p>
+        <div className="header-top">
+          <h1>{isSurf ? "🏄 Surf Forecast" : "🪁 Kitesurf Forecast"}</h1>
+          <div className="mode-toggle" role="group" aria-label="Select forecast mode">
+            <button
+              className={`mode-btn ${appMode === "kite" ? "active" : ""}`}
+              onClick={() => setAppMode("kite")}
+            >
+              🪁 Kitesurf
+            </button>
+            <button
+              className={`mode-btn ${appMode === "surf" ? "active" : ""}`}
+              onClick={() => setAppMode("surf")}
+            >
+              🏄 Surf
+            </button>
+          </div>
+        </div>
+        <p className="subtitle">
+          {isSurf
+            ? "Surfline-inspired wave face height, swell breakdown & surf rating outlook"
+            : "Wind, wave and suitability outlook for top kitesurfing spots"}
+        </p>
       </header>
 
       <div className="layout">
         <nav className="spot-list">
           <h3 className="spot-list-title">Choose a spot:</h3>
           {SPOT_GROUPS.map(([region, spots]) => (
-            <details key={region} className="spot-group">
+            <details key={region} className="spot-group" open={region === "Cyprus" || region === "Worldwide"}>
               <summary className="spot-group-label">{region}</summary>
               {spots.map((s) => (
                 <button
@@ -220,7 +248,7 @@ export default function App() {
             <h2>
               {spot.name}, {spot.country}
             </h2>
-            <p className="blurb">{spot.blurb}</p>
+            <p className="blurb">{isSurf ? spot.surfBlurb ?? spot.blurb : spot.blurb}</p>
           </div>
 
           <div className="tabs">
@@ -234,7 +262,7 @@ export default function App() {
 
           {tab === "report" && (
             <>
-              <LiveNow spot={spot} current={current} station={station} />
+              <LiveNow spot={spot} current={current} station={station} appMode={appMode} />
 
               {liveChartPoints && liveChartPoints.length > 1 && (
                 <div className="live-trend">
@@ -309,7 +337,7 @@ export default function App() {
                 <>
                   {bestWindow ? (
                     <div className="best-window">
-                      ✅ Next good window:{" "}
+                      ✅ Next best window:{" "}
                       <strong>
                         {new Date(bestWindow.time).toLocaleString(undefined, {
                           weekday: "short",
@@ -317,24 +345,49 @@ export default function App() {
                           minute: "2-digit",
                         })}
                       </strong>{" "}
-                      — {Math.round(bestWindow.windSpeedKt)}kt from {Math.round(bestWindow.windDirDeg)}°
+                      —{" "}
+                      {isSurf
+                        ? `${bestWindow.surfHeightMMin?.toFixed(1)}–${bestWindow.surfHeightMMax?.toFixed(1)} m surf (${
+                            SURF_RATING_LABEL[bestWindow.surfRating ?? "fair"]
+                          })`
+                        : `${Math.round(bestWindow.windSpeedKt)}kt from ${Math.round(bestWindow.windDirDeg)}°`}
                     </div>
                   ) : (
                     <div className="best-window fair">
-                      No clearly "good" window in the next {forecastDays} days — check the table below for fair conditions.
+                      No standout session window in the next {forecastDays} days — check the table below for conditions.
                     </div>
                   )}
 
-                  <WindChart points={points} />
+                  {isSurf ? <SurfChart points={points} /> : <WindChart points={points} />}
+
                   <div className="legend">
-                    <LegendSwatch style={LINE_STYLES.speed} label="Wind speed" />
-                    <LegendSwatch style={LINE_STYLES.gust} label="Gusts" />
-                    <span><span className="badge badge-good">good</span><span className="badge badge-fair">fair</span><span className="badge badge-poor">poor</span></span>
+                    {isSurf ? (
+                      <div className="surf-legend-badges">
+                        <span className="legend-label">Surfline Ratings:</span>
+                        <span className="badge badge-surf badge-surf-epic">Epic</span>
+                        <span className="badge badge-surf badge-surf-good">Good</span>
+                        <span className="badge badge-surf badge-surf-fair_to_good">Fair to Good</span>
+                        <span className="badge badge-surf badge-surf-fair">Fair</span>
+                        <span className="badge badge-surf badge-surf-poor_to_fair">Poor to Fair</span>
+                        <span className="badge badge-surf badge-surf-poor">Poor</span>
+                        <span className="legend-label period-label">-- Period (s)</span>
+                      </div>
+                    ) : (
+                      <>
+                        <LegendSwatch style={LINE_STYLES.speed} label="Wind speed" />
+                        <LegendSwatch style={LINE_STYLES.gust} label="Gusts" />
+                        <span>
+                          <span className="badge badge-good">good</span>
+                          <span className="badge badge-fair">fair</span>
+                          <span className="badge badge-poor">poor</span>
+                        </span>
+                      </>
+                    )}
                   </div>
 
                   {!tideEnabled && <p className="tide-note">Tide data isn't available for this spot yet — it refreshes weekly.</p>}
 
-                  <ForecastTable points={points} tideEnabled={tideEnabled} />
+                  <ForecastTable points={points} tideEnabled={tideEnabled} appMode={appMode} />
                 </>
               )}
             </>
@@ -344,3 +397,4 @@ export default function App() {
     </div>
   );
 }
+

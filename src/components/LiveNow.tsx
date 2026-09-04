@@ -1,10 +1,11 @@
-import type { LiveReading, Spot, StationReading } from "../lib/types";
-import { rateWind, compassLabel } from "../lib/suitability";
+import type { AppMode, LiveReading, Spot, StationReading } from "../lib/types";
+import { rateWind, compassLabel, classifyWind } from "../lib/suitability";
 
 interface Props {
   spot: Spot;
   current: LiveReading | null;
   station: StationReading | null;
+  appMode?: AppMode;
 }
 
 function timeAgo(date: Date): string {
@@ -15,8 +16,10 @@ function timeAgo(date: Date): string {
   return `${hours}h ago`;
 }
 
-export function LiveNow({ spot, current, station }: Props) {
+export function LiveNow({ spot, current, station, appMode = "kite" }: Props) {
   if (!current && !station) return null;
+
+  const isSurf = appMode === "surf";
 
   return (
     <div className="live-now">
@@ -27,14 +30,29 @@ export function LiveNow({ spot, current, station }: Props) {
           </div>
           {(() => {
             const r = rateWind(current.windSpeedKt, current.windDirDeg, spot);
+            const windClass = classifyWind(current.windDirDeg, current.windSpeedKt, spot);
+
             return (
               <div className="live-card-body">
-                <span className={`badge badge-${r.rating}`}>{r.rating}</span>
-                <strong>{Math.round(current.windSpeedKt)} kt</strong>
-                <span className="live-sub">gusting {Math.round(current.windGustKt)} kt</span>
-                <span className="live-sub">
-                  {compassLabel(current.windDirDeg)} ({Math.round(current.windDirDeg)}°)
-                </span>
+                {isSurf ? (
+                  <>
+                    <span className={`wind-badge wind-${windClass}`}>{windClass.replace("_", " ")}</span>
+                    <strong>{Math.round(current.windSpeedKt)} kt</strong>
+                    <span className="live-sub">
+                      {compassLabel(current.windDirDeg)} ({Math.round(current.windDirDeg)}°)
+                    </span>
+                    {spot.breakType && <span className="live-sub spot-break-tag">{spot.breakType}</span>}
+                  </>
+                ) : (
+                  <>
+                    <span className={`badge badge-${r.rating}`}>{r.rating}</span>
+                    <strong>{Math.round(current.windSpeedKt)} kt</strong>
+                    <span className="live-sub">gusting {Math.round(current.windGustKt)} kt</span>
+                    <span className="live-sub">
+                      {compassLabel(current.windDirDeg)} ({Math.round(current.windDirDeg)}°)
+                    </span>
+                  </>
+                )}
               </div>
             );
           })()}
@@ -68,3 +86,4 @@ export function LiveNow({ spot, current, station }: Props) {
     </div>
   );
 }
+

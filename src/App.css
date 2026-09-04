@@ -419,6 +419,159 @@
   margin-right: 2px;
 }
 
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.mode-toggle {
+  display: inline-flex;
+  background: var(--code-bg);
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.mode-btn {
+  background: none;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-btn:hover {
+  color: var(--text-h);
+}
+
+.mode-btn.active {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.app.mode-surf {
+  --accent: #0284c7;
+  --accent-bg: rgba(2, 132, 199, 0.12);
+  --accent-border: rgba(2, 132, 199, 0.3);
+}
+
+.surf-legend-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.legend-label {
+  font-weight: 600;
+  opacity: 0.8;
+  font-size: 12px;
+}
+
+.period-label {
+  color: #38bdf8;
+  margin-left: 8px;
+}
+
+/* --- Surfline Rating Badges --- */
+.badge-surf {
+  font-weight: 600;
+  text-transform: none;
+}
+
+.badge-surf-epic {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.badge-surf-good {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.badge-surf-fair_to_good {
+  background: rgba(132, 204, 22, 0.2);
+  color: #84cc16;
+  border: 1px solid rgba(132, 204, 22, 0.4);
+}
+
+.badge-surf-fair {
+  background: rgba(6, 182, 212, 0.2);
+  color: #06b6d4;
+  border: 1px solid rgba(6, 182, 212, 0.4);
+}
+
+.badge-surf-poor_to_fair {
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+.badge-surf-poor {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.badge-surf-flat {
+  background: rgba(100, 116, 139, 0.2);
+  color: #94a3b8;
+  border: 1px solid rgba(100, 116, 139, 0.4);
+}
+
+/* --- Wind Classification Badges --- */
+.wind-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.wind-offshore {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.wind-glassy {
+  background: rgba(6, 182, 212, 0.15);
+  color: #06b6d4;
+}
+
+.wind-cross_shore {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.wind-onshore {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.surf-height-cell {
+  color: var(--text-h);
+}
+
+.spot-break-tag {
+  background: var(--code-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
 @media (max-width: 720px) {
   .layout {
     flex-direction: column;
@@ -434,3 +587,4 @@
     padding: 16px;
   }
 }
+

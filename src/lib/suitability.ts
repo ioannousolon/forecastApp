@@ -1,6 +1,6 @@
 import type { HourlyPoint, RatedPoint, Rating, Spot } from "./types";
 
-function angleDiff(a: number, b: number): number {
+export function angleDiff(a: number, b: number): number {
   const d = Math.abs(a - b) % 360;
   return d > 180 ? 360 - d : d;
 }
@@ -38,8 +38,76 @@ export function rateWind(windSpeedKt: number, windDirDeg: number, spot: Spot): W
   return { speedRating, directionRating, rating: combine(speedRating, directionRating) };
 }
 
+export function classifyWind(windDirDeg: number, windSpeedKt: number, spot: Spot): import("./types").WindClass {
+  if (windSpeedKt < 5) return "glassy";
+  const facingDir = spot.facingDir ?? (spot.onshoreWindDir + 180) % 360;
+  const offshoreDir = (facingDir + 180) % 360;
+  const diffOffshore = angleDiff(windDirDeg, offshoreDir);
+  const diffOnshore = angleDiff(windDirDeg, spot.onshoreWindDir);
+
+  if (diffOffshore <= 50) return "offshore";
+  if (diffOnshore <= 50) return "onshore";
+  return "cross_shore";
+}
+
+export function calculateSurfFaceHeightM(
+  swellHeightM: number | null,
+  waveHeightM: number | null,
+  periodS: number | null
+): { minM: number; maxM: number } {
+  const hM = swellHeightM ?? waveHeightM ?? 0;
+  if (hM <= 0.05) return { minM: 0, maxM: 0.2 };
+  const pS = periodS ?? 6;
+  const shoal = Math.sqrt(Math.max(pS, 4) / 7.5);
+  const baseFaceM = hM * shoal;
+  const minM = Math.max(0, Math.floor(baseFaceM * 0.85 * 10) / 10);
+  const maxM = Math.max(minM + 0.1, Math.ceil(baseFaceM * 1.25 * 10) / 10);
+  return { minM, maxM };
+}
+
+export function rateSurfPoint(
+  point: HourlyPoint,
+  spot: Spot
+): { surfRating: import("./types").SurfRating; windClass: import("./types").WindClass; surfHeightMMin: number; surfHeightMMax: number } {
+  const windClass = classifyWind(point.windDirDeg, point.windSpeedKt, spot);
+  const swellH = point.primarySwell?.heightM ?? point.waveHeightM;
+  const swellP = point.primarySwell?.periodS ?? point.wavePeriodS;
+  const { minM, maxM } = calculateSurfFaceHeightM(swellH, point.waveHeightM, swellP);
+
+  let surfRating: import("./types").SurfRating = "fair";
+
+  if (maxM < 0.3) {
+    surfRating = "flat";
+  } else if (windClass === "onshore" && point.windSpeedKt > 11) {
+    surfRating = "poor";
+  } else if (windClass === "onshore") {
+    surfRating = "poor_to_fair";
+  } else if (windClass === "offshore" && (swellP ?? 0) >= 11 && maxM >= 0.9) {
+    surfRating = "epic";
+  } else if ((windClass === "offshore" || windClass === "glassy") && (swellP ?? 0) >= 9) {
+    surfRating = "good";
+  } else if (windClass === "offshore" || windClass === "glassy") {
+    surfRating = "fair_to_good";
+  } else if (windClass === "cross_shore" && point.windSpeedKt <= 12) {
+    surfRating = "fair";
+  } else {
+    surfRating = "poor_to_fair";
+  }
+
+  return { surfRating, windClass, surfHeightMMin: minM, surfHeightMMax: maxM };
+}
+
 export function ratePoint(point: HourlyPoint, spot: Spot): RatedPoint {
-  return { ...point, ...rateWind(point.windSpeedKt, point.windDirDeg, spot) };
+  const kiteRating = rateWind(point.windSpeedKt, point.windDirDeg, spot);
+  const surfDetails = rateSurfPoint(point, spot);
+  return {
+    ...point,
+    ...kiteRating,
+    surfRating: surfDetails.surfRating,
+    windClass: surfDetails.windClass,
+    surfHeightMMin: surfDetails.surfHeightMMin,
+    surfHeightMMax: surfDetails.surfHeightMMax,
+  };
 }
 
 export function rateForecast(points: HourlyPoint[], spot: Spot): RatedPoint[] {
@@ -50,3 +118,4 @@ export function compassLabel(deg: number): string {
   const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
   return dirs[Math.round(deg / 22.5) % 16];
 }
+
