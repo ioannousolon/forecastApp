@@ -383,7 +383,14 @@ const DEFAULT_SPOT_ID: Record<AppMode, string> = {
 
 export function getDefaultSpotForMode(mode: AppMode): Spot {
   const spots = getSpotsForMode(mode);
-  return spots.find((s) => s.id === DEFAULT_SPOT_ID[mode]) ?? spots[0];
+  const fallback = spots.find((s) => s.id === DEFAULT_SPOT_ID[mode]) ?? spots[0];
+  if (!fallback) {
+    // getSpotsForMode(mode) is empty — every current spot supports at least one mode, so this
+    // means a future change left a mode with no spots at all. Fail loudly instead of returning
+    // undefined and crashing later at a confusing call site (e.g. `.id` on undefined in App.tsx).
+    throw new Error(`No spots configured for mode "${mode}"`);
+  }
+  return fallback;
 }
 
 /** Spots grouped by sidebar region for a given sport mode, with `REGION_ORDER` pinned first. */

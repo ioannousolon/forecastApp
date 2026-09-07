@@ -19,16 +19,17 @@ const HISTORY_RECORD_MS = 15 * 60_000;
 const HISTORY_LOOKBACK_MS = 25 * 3_600_000; // safely covers "since local midnight" for any timezone
 const HISTORY_PRUNE_MS = 48 * 3_600_000;
 const FORECAST_DAY_OPTIONS = [5, 10, 16] as const;
+const INITIAL_MODE: AppMode = "kite";
 
 type Tab = "report" | "forecast";
 
 export default function App() {
-  const [appMode, setAppMode] = useState<AppMode>("kite");
+  const [appMode, setAppMode] = useState<AppMode>(INITIAL_MODE);
 
   const spotGroups = useMemo(() => getSpotGroupsForMode(appMode), [appMode]);
   const validSpots = useMemo(() => getSpotsForMode(appMode), [appMode]);
 
-  const [spotId, setSpotId] = useState(getDefaultSpotForMode("kite").id);
+  const [spotId, setSpotId] = useState(() => getDefaultSpotForMode(INITIAL_MODE).id);
   const [tab, setTab] = useState<Tab>("report");
   const [selectedModel, setSelectedModel] = useState<ModelId>(FORECAST_MODELS[0].id);
   const [forecastDays, setForecastDays] = useState<number>(FORECAST_DAY_OPTIONS[0]);
