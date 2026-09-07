@@ -3,7 +3,7 @@ import { SPOTS, getSpotsForMode, getSpotGroupsForMode } from "./lib/spots";
 import { fetchHourlyForecast, fetchCurrentConditions, fetchRecentWind, FORECAST_MODELS, type ModelId } from "./lib/openMeteo";
 import { fetchStationReading } from "./lib/metar";
 import { attachTides } from "./lib/tide";
-import { rateForecast, rateWind } from "./lib/suitability";
+import { rateForecast, rateWind, rateSurfPoint } from "./lib/suitability";
 import { zoneCurrentHourKey, zoneNowKey } from "./lib/time";
 import { isWithinMiddayToSunset } from "./lib/sun";
 import { recordStationReading, getStationHistory, pruneStationHistory, type ObservedReading } from "./lib/duck";
@@ -96,7 +96,7 @@ export default function App() {
 
     const refresh = async () => {
       const [liveNow, liveStation] = await Promise.all([
-        fetchCurrentConditions(spot),
+        fetchCurrentConditions(spot, appMode === "surf"),
         spot.metarStation ? fetchStationReading(spot.lat, spot.lon, spot.metarStation) : Promise.resolve(null),
       ]);
       if (cancelled) return;
@@ -110,7 +110,7 @@ export default function App() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [spot]);
+  }, [spot, appMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -178,15 +178,24 @@ export default function App() {
     if (last && current.time <= last.time) return past;
 
     const liveRating = rateWind(current.windSpeedKt, current.windDirDeg, spot);
-    const currentPoint: RatedPoint = {
+    const basePoint = {
       time: current.time,
       windSpeedKt: current.windSpeedKt,
       windGustKt: current.windGustKt,
       windDirDeg: current.windDirDeg,
-      waveHeightM: null,
-      wavePeriodS: null,
+      waveHeightM: current.waveHeightM ?? null,
+      wavePeriodS: current.wavePeriodS ?? null,
+      waveDirDeg: current.waveDirDeg ?? null,
       tideHeightM: null,
+    };
+    const surfDetails = rateSurfPoint(basePoint, spot);
+    const currentPoint: RatedPoint = {
+      ...basePoint,
       ...liveRating,
+      surfRating: surfDetails.surfRating,
+      windClass: surfDetails.windClass,
+      surfHeightMMin: surfDetails.surfHeightMMin,
+      surfHeightMMax: surfDetails.surfHeightMMax,
     };
     return [...past, currentPoint];
   }, [recentPoints, recentTimezone, current, spot]);
@@ -278,25 +287,43 @@ export default function App() {
 
               {liveChartPoints && liveChartPoints.length > 1 && (
                 <div className="live-trend">
-                  <h3 className="section-label">Today's wind so far</h3>
-                  <WindChart
-                    points={liveChartPoints}
-                    todayView={recentTimezone ? { timezone: recentTimezone, observed: observedHistory } : undefined}
-                  />
-                  <div className="legend">
-                    <LegendSwatch style={LINE_STYLES.speed} label="Model speed" />
-                    <LegendSwatch style={LINE_STYLES.gust} label="Model gusts" />
-                    {observedHistory.length > 0 && (
-                      <>
-                        <LegendSwatch style={LINE_STYLES.observedSpeed} label="Observed speed" />
-                        <LegendSwatch style={LINE_STYLES.observedGust} label="Observed gusts" />
-                      </>
-                    )}
-                  </div>
-                  {spot.metarStation && observedHistory.length === 0 && (
-                    <p className="tide-note">
-                      Real station readings are logged every 15 min between local midday and sunset — none recorded yet today.
-                    </p>
+                  <h3 className="section-label">{isSurf ? "Today's surf so far" : "Today's wind so far"}</h3>
+                  {isSurf ? (
+                    <>
+                      <SurfChart points={liveChartPoints} />
+                      <div className="surf-legend-badges">
+                        <span className="legend-label">Surfline Ratings:</span>
+                        <span className="badge badge-surf badge-surf-epic">Epic</span>
+                        <span className="badge badge-surf badge-surf-good">Good</span>
+                        <span className="badge badge-surf badge-surf-fair_to_good">Fair to Good</span>
+                        <span className="badge badge-surf badge-surf-fair">Fair</span>
+                        <span className="badge badge-surf badge-surf-poor_to_fair">Poor to Fair</span>
+                        <span className="badge badge-surf badge-surf-poor">Poor</span>
+                        <span className="legend-label period-label">-- Period (s)</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <WindChart
+                        points={liveChartPoints}
+                        todayView={recentTimezone ? { timezone: recentTimezone, observed: observedHistory } : undefined}
+                      />
+                      <div className="legend">
+                        <LegendSwatch style={LINE_STYLES.speed} label="Model speed" />
+                        <LegendSwatch style={LINE_STYLES.gust} label="Model gusts" />
+                        {observedHistory.length > 0 && (
+                          <>
+                            <LegendSwatch style={LINE_STYLES.observedSpeed} label="Observed speed" />
+                            <LegendSwatch style={LINE_STYLES.observedGust} label="Observed gusts" />
+                          </>
+                        )}
+                      </div>
+                      {spot.metarStation && observedHistory.length === 0 && (
+                        <p className="tide-note">
+                          Real station readings are logged every 15 min between local midday and sunset — none recorded yet today.
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -409,4 +436,3 @@ export default function App() {
     </div>
   );
 }
-

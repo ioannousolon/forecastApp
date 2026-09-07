@@ -94,4 +94,3 @@ export interface RatedPoint extends HourlyPoint {
   // Surf rating included when evaluated
   surfRating?: SurfRating;
 }
-

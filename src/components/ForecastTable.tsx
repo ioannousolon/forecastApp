@@ -122,4 +122,3 @@ export function ForecastTable({ points, tideEnabled, appMode = "kite" }: Props) 
     </div>
   );
 }
-

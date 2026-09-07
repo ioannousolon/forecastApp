@@ -159,8 +159,13 @@ interface CurrentBlock {
   wind_direction_10m: number;
 }
 
-/** Latest model-analyzed "right now" reading (refreshes roughly every 15 minutes upstream). */
-export async function fetchCurrentConditions(spot: Spot): Promise<LiveReading | null> {
+/**
+ * Latest model-analyzed "right now" reading (refreshes roughly every 15 minutes upstream).
+ * `includeMarine` fetches current wave/swell too — skip it for kite sessions that never
+ * display marine data, so the 5-minute live-refresh poll doesn't double its request count
+ * for the common case.
+ */
+export async function fetchCurrentConditions(spot: Spot, includeMarine = false): Promise<LiveReading | null> {
   const windUrl =
     `https://api.open-meteo.com/v1/forecast?latitude=${spot.lat}&longitude=${spot.lon}` +
     `&current=wind_speed_10m,wind_gusts_10m,wind_direction_10m&windspeed_unit=kn&timezone=auto`;
@@ -172,7 +177,9 @@ export async function fetchCurrentConditions(spot: Spot): Promise<LiveReading | 
   try {
     const [windData, marineData] = await Promise.all([
       fetchJson<{ current: CurrentBlock }>(windUrl),
-      fetchJson<{ current?: { wave_height: number; wave_period: number; wave_direction: number } }>(marineUrl).catch(() => null),
+      includeMarine
+        ? fetchJson<{ current?: { wave_height: number; wave_period: number; wave_direction: number } }>(marineUrl).catch(() => null)
+        : Promise.resolve(null),
     ]);
 
     return {
