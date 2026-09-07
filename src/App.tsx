@@ -249,7 +249,7 @@ export default function App() {
         <nav className="spot-list">
           <h3 className="spot-list-title">Choose a spot ({isSurf ? "Surf" : "Kite"}):</h3>
           {spotGroups.map(([region, spots]) => (
-            <details key={region} className="spot-group" open={region === "Cyprus" || region === "Worldwide"}>
+            <details key={region} className="spot-group" open={true}>
               <summary className="spot-group-label">{region}</summary>
               {spots.map((s) => (
                 <button

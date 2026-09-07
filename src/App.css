@@ -87,6 +87,13 @@
   transform: rotate(90deg);
 }
 
+/* .spot-item's own `display: block` below is an author rule, so it beats the browser's built-in
+   `details:not([open]) > * { display: none }` regardless of specificity (author always wins over
+   user-agent styles) — collapsing a group did nothing visually without this explicit re-hide. */
+.spot-group:not([open]) > :not(summary) {
+  display: none;
+}
+
 .spot-item {
   display: block;
   width: 100%;
