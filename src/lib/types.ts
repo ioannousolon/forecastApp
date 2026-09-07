@@ -29,7 +29,7 @@ export interface Spot {
   lon: number;
   /** Meteorological direction (deg, "from") of wind blowing straight onshore at this spot. */
   onshoreWindDir: number;
-  /** Meteorological direction (deg) the beach faces out to ocean/sea (usually onshoreWindDir + 180 % 360). */
+  /** Meteorological direction (deg) the beach faces out to ocean/sea — same convention as onshoreWindDir (usually equal to it), used as the onshore/offshore reference for surf wind classification. */
   facingDir?: number;
   optimalSwellMinDeg?: number;
   optimalSwellMaxDeg?: number;

@@ -44,10 +44,16 @@ export function classifyWind(windDirDeg: number, windSpeedKt: number, spot: Spot
   // (see rateDirection above, which derives offshore as onshoreWindDir + 180). Falling back to
   // onshoreWindDir + 180 here would compute the offshore bearing as equal to the onshore one,
   // inverting the classification for any spot that omits facingDir.
+  //
+  // Both the onshore and offshore checks below must use the SAME reference bearing (facingDir,
+  // when set) — comparing offshore against facingDir but onshore against onshoreWindDir left a
+  // gap between the two 50° windows whenever they diverge (e.g. Tarifa: facingDir 220 vs
+  // onshoreWindDir 180), so a wind genuinely onshore relative to the true facing direction could
+  // fall into neither bucket and get mislabeled "cross_shore".
   const facingDir = spot.facingDir ?? spot.onshoreWindDir;
   const offshoreDir = (facingDir + 180) % 360;
   const diffOffshore = angleDiff(windDirDeg, offshoreDir);
-  const diffOnshore = angleDiff(windDirDeg, spot.onshoreWindDir);
+  const diffOnshore = angleDiff(windDirDeg, facingDir);
 
   if (diffOffshore <= 50) return "offshore";
   if (diffOnshore <= 50) return "onshore";

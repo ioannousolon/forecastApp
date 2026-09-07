@@ -87,11 +87,13 @@ export function LiveNow({ spot, current, station, appMode = "kite" }: Props) {
           <div className="live-card-body">
             {isSurf ? (
               <>
-                {station.windDirDeg != null && (
-                  <span className={`wind-badge wind-${classifyWind(station.windDirDeg, station.windSpeedKt, spot)}`}>
-                    {classifyWind(station.windDirDeg, station.windSpeedKt, spot).replace("_", " ")}
-                  </span>
-                )}
+                {station.windDirDeg != null &&
+                  (() => {
+                    const stationWindClass = classifyWind(station.windDirDeg, station.windSpeedKt, spot);
+                    return (
+                      <span className={`wind-badge wind-${stationWindClass}`}>{stationWindClass.replace("_", " ")}</span>
+                    );
+                  })()}
                 <strong>{station.windSpeedKt} kt wind</strong>
                 <span className="live-sub">
                   {station.windDirDeg != null ? `${compassLabel(station.windDirDeg)} (${station.windDirDeg}°)` : "variable"}

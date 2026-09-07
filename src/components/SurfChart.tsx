@@ -41,14 +41,18 @@ export function SurfChart({ points }: Props) {
 
   const barWidth = Math.max(3, Math.min(18, plotW / points.length - 2));
 
-  // Build period path
+  // Build period path. Track whether the path has actually started rather than checking i === 0 —
+  // if the first point(s) have no period data, the first real segment must still start with "M",
+  // not "L" (an SVG path can't open with a line-to command).
   let periodPath = "";
+  let periodPathStarted = false;
   points.forEach((p, i) => {
     const period = p.primarySwell?.periodS ?? p.wavePeriodS;
     if (period != null) {
       // Map period (0-20s) onto plot height
       const y = padding.top + plotH - (Math.min(period, 20) / 20) * plotH;
-      periodPath += `${i === 0 ? "M" : "L"} ${xFor(i)} ${y} `;
+      periodPath += `${periodPathStarted ? "L" : "M"} ${xFor(i)} ${y} `;
+      periodPathStarted = true;
     }
   });
 
