@@ -375,6 +375,17 @@ export function getSpotsForMode(mode: AppMode): Spot[] {
   return SPOTS.filter((s) => !s.sports || s.sports.includes(mode));
 }
 
+/** The spot each mode opens to by default, and falls back to when switching modes away from a spot the new mode doesn't support. */
+const DEFAULT_SPOT_ID: Record<AppMode, string> = {
+  kite: "pervolia",
+  surf: "paphos-venus",
+};
+
+export function getDefaultSpotForMode(mode: AppMode): Spot {
+  const spots = getSpotsForMode(mode);
+  return spots.find((s) => s.id === DEFAULT_SPOT_ID[mode]) ?? spots[0];
+}
+
 /** Spots grouped by sidebar region for a given sport mode, with `REGION_ORDER` pinned first. */
 export function getSpotGroupsForMode(mode: AppMode): [string, Spot[]][] {
   const modeSpots = getSpotsForMode(mode);
