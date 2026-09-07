@@ -375,6 +375,24 @@ export function getSpotsForMode(mode: AppMode): Spot[] {
   return SPOTS.filter((s) => !s.sports || s.sports.includes(mode));
 }
 
+/** The spot each mode opens to by default, and falls back to when switching modes away from a spot the new mode doesn't support. */
+const DEFAULT_SPOT_ID: Record<AppMode, string> = {
+  kite: "pervolia",
+  surf: "paphos-venus",
+};
+
+export function getDefaultSpotForMode(mode: AppMode): Spot {
+  const spots = getSpotsForMode(mode);
+  const fallback = spots.find((s) => s.id === DEFAULT_SPOT_ID[mode]) ?? spots[0];
+  if (!fallback) {
+    // getSpotsForMode(mode) is empty — every current spot supports at least one mode, so this
+    // means a future change left a mode with no spots at all. Fail loudly instead of returning
+    // undefined and crashing later at a confusing call site (e.g. `.id` on undefined in App.tsx).
+    throw new Error(`No spots configured for mode "${mode}"`);
+  }
+  return fallback;
+}
+
 /** Spots grouped by sidebar region for a given sport mode, with `REGION_ORDER` pinned first. */
 export function getSpotGroupsForMode(mode: AppMode): [string, Spot[]][] {
   const modeSpots = getSpotsForMode(mode);
