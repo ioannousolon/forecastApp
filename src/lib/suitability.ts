@@ -1,6 +1,6 @@
-import type { HourlyPoint, RatedPoint, Rating, Spot } from "./types";
+import type { HourlyPoint, LiveReading, RatedPoint, Rating, Spot } from "./types";
 
-function angleDiff(a: number, b: number): number {
+export function angleDiff(a: number, b: number): number {
   const d = Math.abs(a - b) % 360;
   return d > 180 ? 360 - d : d;
 }
@@ -38,8 +38,133 @@ export function rateWind(windSpeedKt: number, windDirDeg: number, spot: Spot): W
   return { speedRating, directionRating, rating: combine(speedRating, directionRating) };
 }
 
+export function classifyWind(windDirDeg: number, windSpeedKt: number, spot: Spot): import("./types").WindClass {
+  if (windSpeedKt < 5) return "glassy";
+  // facingDir is the bearing the beach faces out to sea — the same convention as onshoreWindDir
+  // (see rateDirection above, which derives offshore as onshoreWindDir + 180). Falling back to
+  // onshoreWindDir + 180 here would compute the offshore bearing as equal to the onshore one,
+  // inverting the classification for any spot that omits facingDir.
+  //
+  // Both the onshore and offshore checks below must use the SAME reference bearing (facingDir,
+  // when set) — comparing offshore against facingDir but onshore against onshoreWindDir left a
+  // gap between the two 50° windows whenever they diverge (e.g. Tarifa: facingDir 220 vs
+  // onshoreWindDir 180), so a wind genuinely onshore relative to the true facing direction could
+  // fall into neither bucket and get mislabeled "cross_shore".
+  const facingDir = spot.facingDir ?? spot.onshoreWindDir;
+  const offshoreDir = (facingDir + 180) % 360;
+  const diffOffshore = angleDiff(windDirDeg, offshoreDir);
+  const diffOnshore = angleDiff(windDirDeg, facingDir);
+
+  if (diffOffshore <= 50) return "offshore";
+  if (diffOnshore <= 50) return "onshore";
+  return "cross_shore";
+}
+
+const SURF_RATING_RANK: Record<import("./types").SurfRating, number> = {
+  flat: 0,
+  poor: 1,
+  poor_to_fair: 2,
+  fair: 3,
+  fair_to_good: 4,
+  good: 5,
+  epic: 6,
+};
+
+/** True when `dirDeg` falls within the [minDeg, maxDeg] arc, handling wraparound through 0/360. */
+function isWithinSwellWindow(dirDeg: number, minDeg: number, maxDeg: number): boolean {
+  if (minDeg <= maxDeg) return dirDeg >= minDeg && dirDeg <= maxDeg;
+  return dirDeg >= minDeg || dirDeg <= maxDeg;
+}
+
+export function calculateSurfFaceHeightM(
+  swellHeightM: number | null,
+  waveHeightM: number | null,
+  periodS: number | null
+): { minM: number; maxM: number } {
+  const hM = swellHeightM ?? waveHeightM ?? 0;
+  if (hM <= 0.05) return { minM: 0, maxM: 0.2 };
+  const pS = periodS ?? 6;
+  const shoal = Math.sqrt(Math.max(pS, 4) / 7.5);
+  const baseFaceM = hM * shoal;
+  const minM = Math.max(0, Math.floor(baseFaceM * 0.85 * 10) / 10);
+  const maxM = Math.max(minM + 0.1, Math.ceil(baseFaceM * 1.25 * 10) / 10);
+  return { minM, maxM };
+}
+
+export function rateSurfPoint(
+  point: HourlyPoint,
+  spot: Spot
+): { surfRating: import("./types").SurfRating; windClass: import("./types").WindClass; surfHeightMMin: number; surfHeightMMax: number } {
+  const windClass = classifyWind(point.windDirDeg, point.windSpeedKt, spot);
+  const swellH = point.primarySwell?.heightM ?? point.waveHeightM;
+  const swellP = point.primarySwell?.periodS ?? point.wavePeriodS;
+  const swellDir = point.primarySwell?.dirDeg ?? point.waveDirDeg;
+  const { minM, maxM } = calculateSurfFaceHeightM(swellH, point.waveHeightM, swellP);
+
+  let surfRating: import("./types").SurfRating = "fair";
+
+  if (maxM < 0.3) {
+    surfRating = "flat";
+  } else if (windClass === "onshore" && point.windSpeedKt > 11) {
+    surfRating = "poor";
+  } else if (windClass === "onshore") {
+    surfRating = "poor_to_fair";
+  } else if (windClass === "offshore" && (swellP ?? 0) >= 11 && maxM >= 0.9) {
+    surfRating = "epic";
+  } else if ((windClass === "offshore" || windClass === "glassy") && (swellP ?? 0) >= 9) {
+    surfRating = "good";
+  } else if (windClass === "offshore" || windClass === "glassy") {
+    surfRating = "fair_to_good";
+  } else if (windClass === "cross_shore" && point.windSpeedKt <= 12) {
+    surfRating = "fair";
+  } else {
+    surfRating = "poor_to_fair";
+  }
+
+  // A break simply doesn't work when swell arrives from outside its workable window, regardless
+  // of how good wind/period look — cap the rating rather than ignore the spot's configured arc.
+  if (swellDir != null && spot.optimalSwellMinDeg != null && spot.optimalSwellMaxDeg != null) {
+    if (!isWithinSwellWindow(swellDir, spot.optimalSwellMinDeg, spot.optimalSwellMaxDeg)) {
+      if (SURF_RATING_RANK[surfRating] > SURF_RATING_RANK.poor_to_fair) surfRating = "poor_to_fair";
+    }
+  }
+
+  return { surfRating, windClass, surfHeightMMin: minM, surfHeightMMax: maxM };
+}
+
+export function evaluateLiveSurfReading(
+  reading: LiveReading,
+  spot: Spot
+): {
+  surfRating: import("./types").SurfRating;
+  windClass: import("./types").WindClass;
+  surfHeightMMin: number;
+  surfHeightMMax: number;
+} {
+  const dummyPoint: HourlyPoint = {
+    time: reading.time,
+    windSpeedKt: reading.windSpeedKt,
+    windGustKt: reading.windGustKt,
+    windDirDeg: reading.windDirDeg,
+    waveHeightM: reading.waveHeightM ?? null,
+    wavePeriodS: reading.wavePeriodS ?? null,
+    waveDirDeg: reading.waveDirDeg ?? null,
+    tideHeightM: null,
+  };
+  return rateSurfPoint(dummyPoint, spot);
+}
+
 export function ratePoint(point: HourlyPoint, spot: Spot): RatedPoint {
-  return { ...point, ...rateWind(point.windSpeedKt, point.windDirDeg, spot) };
+  const kiteRating = rateWind(point.windSpeedKt, point.windDirDeg, spot);
+  const surfDetails = rateSurfPoint(point, spot);
+  return {
+    ...point,
+    ...kiteRating,
+    surfRating: surfDetails.surfRating,
+    windClass: surfDetails.windClass,
+    surfHeightMMin: surfDetails.surfHeightMMin,
+    surfHeightMMax: surfDetails.surfHeightMMax,
+  };
 }
 
 export function rateForecast(points: HourlyPoint[], spot: Spot): RatedPoint[] {

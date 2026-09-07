@@ -21,6 +21,11 @@ interface MarineHourly {
   time: string[];
   wave_height: (number | null)[];
   wave_period: (number | null)[];
+  wave_direction?: (number | null)[];
+  swell_wave_height?: (number | null)[];
+  swell_wave_period?: (number | null)[];
+  swell_wave_direction?: (number | null)[];
+  swell_wave_peak_period?: (number | null)[];
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -53,19 +58,34 @@ export async function fetchHourlyForecast(spot: Spot, days: number): Promise<Mul
 
   const marineUrl =
     `https://marine-api.open-meteo.com/v1/marine?latitude=${spot.lat}&longitude=${spot.lon}` +
-    `&hourly=wave_height,wave_period&timezone=auto&forecast_days=${days}`;
+    `&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period` +
+    `&timezone=auto&forecast_days=${days}`;
 
   const [wind, marine] = await Promise.all([
     fetchJson<{ timezone: string; hourly: { time: string[] } & Record<string, (number | null)[]> }>(windUrl),
     fetchJson<{ hourly: MarineHourly }>(marineUrl).catch(() => null),
   ]);
 
-  const marineByTime = new Map<string, { height: number | null; period: number | null }>();
+  interface MarineDetails {
+    height: number | null;
+    period: number | null;
+    direction: number | null;
+    swellHeight: number | null;
+    swellPeriod: number | null;
+    swellDir: number | null;
+  }
+
+  const marineByTime = new Map<string, MarineDetails>();
   if (marine) {
     marine.hourly.time.forEach((t, i) => {
+      const swellP = marine.hourly.swell_wave_peak_period?.[i] ?? marine.hourly.swell_wave_period?.[i] ?? null;
       marineByTime.set(t, {
         height: marine.hourly.wave_height[i] ?? null,
         period: marine.hourly.wave_period[i] ?? null,
+        direction: marine.hourly.wave_direction?.[i] ?? null,
+        swellHeight: marine.hourly.swell_wave_height?.[i] ?? null,
+        swellPeriod: swellP,
+        swellDir: marine.hourly.swell_wave_direction?.[i] ?? null,
       });
     });
   }
@@ -92,6 +112,7 @@ export async function fetchHourlyForecast(spot: Spot, days: number): Promise<Mul
     }
     byModel[model.id] = time.slice(0, coverageEnd).map((t, i) => {
       const m = marineByTime.get(t);
+      const primarySwell = m?.swellHeight != null ? { heightM: m.swellHeight, periodS: m.swellPeriod, dirDeg: m.swellDir } : undefined;
       return {
         time: t,
         windSpeedKt: speeds[i]!,
@@ -99,6 +120,8 @@ export async function fetchHourlyForecast(spot: Spot, days: number): Promise<Mul
         windDirDeg: dirs[i]!,
         waveHeightM: m?.height ?? null,
         wavePeriodS: m?.period ?? null,
+        waveDirDeg: m?.direction ?? null,
+        primarySwell,
         tideHeightM: null,
       };
     });
@@ -136,19 +159,37 @@ interface CurrentBlock {
   wind_direction_10m: number;
 }
 
-/** Latest model-analyzed "right now" reading (refreshes roughly every 15 minutes upstream). */
-export async function fetchCurrentConditions(spot: Spot): Promise<LiveReading | null> {
-  const url =
+/**
+ * Latest model-analyzed "right now" reading (refreshes roughly every 15 minutes upstream).
+ * `includeMarine` fetches current wave/swell too — skip it for kite sessions that never
+ * display marine data, so the 5-minute live-refresh poll doesn't double its request count
+ * for the common case.
+ */
+export async function fetchCurrentConditions(spot: Spot, includeMarine = false): Promise<LiveReading | null> {
+  const windUrl =
     `https://api.open-meteo.com/v1/forecast?latitude=${spot.lat}&longitude=${spot.lon}` +
     `&current=wind_speed_10m,wind_gusts_10m,wind_direction_10m&windspeed_unit=kn&timezone=auto`;
 
+  const marineUrl =
+    `https://marine-api.open-meteo.com/v1/marine?latitude=${spot.lat}&longitude=${spot.lon}` +
+    `&current=wave_height,wave_period,wave_direction&timezone=auto`;
+
   try {
-    const data = await fetchJson<{ current: CurrentBlock }>(url);
+    const [windData, marineData] = await Promise.all([
+      fetchJson<{ current: CurrentBlock }>(windUrl),
+      includeMarine
+        ? fetchJson<{ current?: { wave_height: number; wave_period: number; wave_direction: number } }>(marineUrl).catch(() => null)
+        : Promise.resolve(null),
+    ]);
+
     return {
-      time: data.current.time,
-      windSpeedKt: data.current.wind_speed_10m,
-      windGustKt: data.current.wind_gusts_10m,
-      windDirDeg: data.current.wind_direction_10m,
+      time: windData.current.time,
+      windSpeedKt: windData.current.wind_speed_10m,
+      windGustKt: windData.current.wind_gusts_10m,
+      windDirDeg: windData.current.wind_direction_10m,
+      waveHeightM: marineData?.current?.wave_height ?? null,
+      wavePeriodS: marineData?.current?.wave_period ?? null,
+      waveDirDeg: marineData?.current?.wave_direction ?? null,
     };
   } catch {
     return null;
